@@ -1,0 +1,21 @@
+cabal-version:  2.4
+
+name:           fc-lh
+version:        0.1.0.0
+build-type:     Simple
+
+library
+  exposed-modules:
+      Util.EquationalExt,
+      MyBool,
+      MyNat,
+      MyList,
+      MyAB
+  hs-source-dirs:
+      src
+  build-depends:
+      liquidhaskell,
+      liquid-base,
+      liquid-prelude
+  default-language: Haskell2010
+  ghc-options: -fplugin=LiquidHaskell
