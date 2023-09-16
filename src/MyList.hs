@@ -10,7 +10,7 @@ import MyNat
 import Util.EquationalExt
 
 import Language.Haskell.Liquid.Equational
-import Prelude (Show, undefined)
+import Prelude (Show, (.), undefined)
 
 ------------------------------------------------------------------------
 -- Data type for lists of some type
@@ -78,6 +78,13 @@ filter = \p l -> case l of
 {-@ reflect rev @-}
 rev :: List a -> List a
 rev = \l -> case l of { E -> E; x`C`xs -> rev xs ++ single x }
+
+-- More advanced 
+
+{-@ reflect foldr @-}
+{-@ foldr :: (a -> b -> b) -> b -> List a -> b @-}
+foldr :: (a -> b -> b) -> b -> List a -> b
+foldr = \f b l -> case l of { E -> b; x`C`xs -> f x (foldr f b xs) }
 
 
 ------------------------------------------------------------------------
@@ -227,7 +234,7 @@ prp_FilterIdempotence :: (a -> Bool) -> List a -> Proof
 -- Proceed by induction on l:List and let p:(a->Bool) be any predicate
 -- CB) l = []
 prp_FilterIdempotence p E =
-      filter p (filter p E)             ? filter p E
+      filter p (filter p E)             ? filter
   ==. filter p E               
   *** QED 
 -- l = x:xs 
@@ -254,8 +261,8 @@ prp_FilterLength :: (a -> Bool) -> List a -> Proof
 -- Proceed by induction on l:List and let p:(a->Bool) be any predicate
 -- CB) l = []
 prp_FilterLength p E =
-      length (filter p E)             ? filter p E
-  ==. length E                        ? length E  
+      length (filter p E)             ? filter
+  ==. length E                        ? length
   ==. O                               ? prp_LeqZero (length E)
   <=. length E               
   *** QED 
@@ -277,3 +284,30 @@ prp_FilterLength p (x`C`xs) =
           <=. S (length xs)                          ? length
           ==. length (x`C`xs)
           *** QED
+
+-- map distributes over composition.
+-- Proposition. ∀ f:(b -> c). ∀ g:(a -> b). ∀ l:List a. ((map f) . (map g)) l = map (f . g) l
+{-@ prp_mapCompDistr :: f:(b -> c) -> g:(a -> b) -> l:List a -> { ((map f) . (map g)) (l) = map (f . g) l } @-}
+prp_mapCompDistr :: (b -> c) -> (a -> b) -> List a -> Proof         
+-- Proceed by induction on l:List a and let f:(b -> c) and g:(a -> b) be any functions
+-- CB) l = []
+prp_mapCompDistr f g E =
+      ((map f) . (map g)) E               ? (.)
+  ==. map f (map g E)                     ? map
+  ==. map f E                             ? map 
+  ==. E                                   ? map 
+  ==. map (f . g) E               
+  *** QED   
+-- l = x:xs 
+-- HI) ((map f) . (map g)) xs = map (f . g) xs
+-- TI) ((map f) . (map g)) x:xs =? map (f . g) x:xs
+prp_mapCompDistr f g (x`C`xs) = undefined
+      ((map f) . (map g)) (x`C`xs)               ? (.)
+  ==. map f (map g (x`C`xs))                     ? map
+  ==. map f ((g x)`C`map g xs)                   ? map 
+  ==. (f (g x))`C`(map f (map g xs))             ? (.) 
+  ==. ((f . g) x)`C`(map f (map g xs))           ? (.) 
+  ==. ((f . g) x)`C`(((map f) . (map g)) xs)     ? prp_mapCompDistr f g xs     
+  ==. ((f . g) x)`C`(map (f . g) xs)             ? map 
+  ==. map (f . g) (x`C`xs)
+  *** QED   
