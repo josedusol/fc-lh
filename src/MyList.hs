@@ -84,7 +84,12 @@ rev = \l -> case l of { E -> E; x`C`xs -> rev xs ++ single x }
 {-@ reflect foldr @-}
 {-@ foldr :: (a -> b -> b) -> b -> List a -> b @-}
 foldr :: (a -> b -> b) -> b -> List a -> b
-foldr = \f b l -> case l of { E -> b; x`C`xs -> f x (foldr f b xs) }
+foldr = \f e l -> case l of { E -> e; x`C`xs -> f x (foldr f e xs) }
+
+{-@ reflect foldl @-}
+{-@ foldl :: (b -> a -> b) -> b -> List a -> b @-}
+foldl :: (b -> a -> b) -> b -> List a -> b
+foldl = \f e l -> case l of { E -> e; x`C`xs -> foldl f (f e x) xs }
 
 
 ------------------------------------------------------------------------
@@ -280,7 +285,7 @@ prp_FilterLength p (x`C`xs) =
           *** QED 
     T ->      length (filter p (x`C`xs))             ? filter
           ==. length (x`C`(filter p xs))             ? length 
-          ==. S (length (filter p xs))               ? prp_LeqSucMono (length (filter p xs)) (length xs) (prp_FilterLength p xs) 
+          ==. S (length (filter p xs))               ? prp_LeqSucMono (length (filter p xs)) (length xs) (prp_FilterLength p xs) -- HI inside lemma
           <=. S (length xs)                          ? length
           ==. length (x`C`xs)
           *** QED
@@ -312,11 +317,15 @@ prp_mapCompDistr f g (x`C`xs) = undefined
   ==. map (f . g) (x`C`xs)
   *** QED   
 
+-- More advanced 
+
 -- foldr fusion law
 -- See Algorithm Design with Haskell (2020, Bird&Gibbons) pag. 12
 -- List is assumed finite, for infinite lists another condition is needed.
 -- Proposition. ∀ f:(a -> b -> b). ∀ g:(a -> b -> b). ∀ h:(b -> b). ∀ e:b. ∀ l:List a. 
 --                    h (foldr f e l) = foldr g (h e) l
+--              or equivalently in pointfree style:
+--                    h . (foldr f e) = foldr g (h e)
 --              when ∀ x:a.∀ y:b. h (f x y) = g x (h y)
 {-@ prp_foldrFusion :: f:(a -> b -> b) -> g:(a -> b -> b) 
                     -> h:(b -> b) -> e:b -> l:List a
@@ -343,3 +352,36 @@ prp_foldrFusion f g h e (x`C`xs) hyp_fcnd =
   ==. g x (foldr g (h e) xs)               ? foldr
   ==. foldr g (h e) (x`C`xs)          
   *** QED     
+
+-- foldl fusion law
+-- See Algorithm Design with Haskell (2020, Bird&Gibbons) Exercise 1.18
+-- Proposition. ∀ f:(b -> a -> b). ∀ g:(b -> a -> b). ∀ h:(b -> b). ∀ e:b. ∀ l:List a. 
+--                    h (foldl f e l) = foldl g (h e) l
+--              or equivalently in pointfree style:
+--                    h . (foldl f e) = foldl g (h e)
+--              when ∀ x:a.∀ y:b. h (f y x) = g (h y) x
+{-@ prp_foldlFusion :: f:(b -> a -> b) -> g:(b -> a -> b) 
+                    -> h:(b -> b) -> e:b -> l:List a
+                    -> (x:a -> y:b -> { h (f y x) = g (h y) x })
+                    -> { h (foldl f e l) = foldl g (h e) l }      @-}
+prp_foldlFusion :: (b -> a -> b) -> (b -> a -> b) 
+                -> (b -> b) -> b -> List a
+                -> (a -> b -> Proof)                 -- the "fusion condition"
+                -> Proof
+-- Proceed by induction on l:List a
+-- CB) l = []
+prp_foldlFusion f g h e E hyp_fcnd =
+      h (foldl f e E)                      ? foldl
+  ==. h e                                  ? foldl
+  ==. foldl g (h e) E            
+  *** QED   
+-- l = x:xs 
+-- HI) h (foldl f e xs) = foldl g (h e) xs
+-- TI) h (foldl f e x:xs) =? foldl g (h e) x:xs
+prp_foldlFusion f g h e (x`C`xs) hyp_fcnd =
+      foldl g (h e) (x`C`xs)               ? foldl
+  ==. foldl g (g (h e) x) xs               ? hyp_fcnd x e -- with y=e
+  ==. foldl g (h (f e x)) xs               ? prp_foldlFusion f g h (f e x) xs hyp_fcnd  -- HI, with e = f e x  
+  ==. h (foldl f (f e x) xs)               ? foldl 
+  ==. h (foldl f e (x`C`xs))
+  *** QED   
