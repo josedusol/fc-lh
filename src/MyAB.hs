@@ -43,7 +43,7 @@ hojas = \t -> case t of { H x -> single x; Nodo ti td -> hojas ti ++ hojas td }
 -- Proofs
 ------------------------------------------------------------------------
 
--- Lemma: ∀ t:AB a. cantH t = S (cantN t)
+-- Proposition. ∀ t:AB a. cantH t = S (cantN t)
 {-@ prp_HojasNodos :: t:AB a -> { cantH t = S (cantN t) } @-}
 prp_HojasNodos :: AB a -> Proof
 -- Proceed by induction on t:AB a

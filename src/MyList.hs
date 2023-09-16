@@ -100,7 +100,7 @@ foldl = \f e l -> case l of { E -> e; x`C`xs -> foldl f (f e x) xs }
 {-@ prp_ConcatIdLeft :: l:List a -> { E ++ l = l } @-}
 prp_ConcatIdLeft :: List a -> Proof
 prp_ConcatIdLeft l = 
-      E ++ l         ? (++)    
+      E ++ l                ? (++)    
   ==. l                      
   *** QED      
 

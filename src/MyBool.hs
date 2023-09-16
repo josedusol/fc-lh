@@ -67,7 +67,7 @@ neg = \b -> case b of {F -> T; T -> F}
 -- Proofs
 ------------------------------------------------------------------------
 -- neg is an involutive function.
--- Lemma:  ∀ b:Bool. neg (neg b) = b
+-- Proposition. ∀ b:Bool. neg (neg b) = b
 {-@ prp_NegInv :: b:Bool -> { neg (neg b) = b } @-}
 prp_NegInv :: Bool -> Proof
 -- Proceed by cases on b:Bool
@@ -87,7 +87,7 @@ prp_NegInv T =
   *** QED
 
 -- F dominates/absorbs to the left of conjunction.
--- Lemma:  ∀ b:Bool. F && b = F
+-- Proposition. ∀ b:Bool. F && b = F
 {-@ prp_AndZeroLeft :: b:Bool -> { F .&&. b = F } @-}
 prp_AndZeroLeft :: Bool -> Proof
 prp_AndZeroLeft b = 
@@ -96,7 +96,7 @@ prp_AndZeroLeft b =
   *** QED
 
 -- F dominates/absorbs to the right of conjunction.
--- Lemma:  ∀ b:Bool. b && F = F
+-- Proposition. ∀ b:Bool. b && F = F
 {-@ prp_AndZeroRight :: b:Bool -> { b .&&. F = F } @-}
 prp_AndZeroRight :: Bool -> Proof
 -- Proceed by cases on b:Bool
@@ -112,19 +112,19 @@ prp_AndZeroRight T =
   *** QED    
 
 -- T is identity to the left of conjunction.
--- Lemma:  ∀ b:Bool. T && b = b
+-- Proposition. ∀ b:Bool. T && b = b
 {-@ prp_AndIdLeft :: b:Bool -> { T .&&. b = b } @-}
 prp_AndIdLeft :: Bool -> Proof
 prp_AndIdLeft b = undefined         -- TODO
 
 -- T is identity to the right of conjunction.
--- Lema:  ∀ b:Bool. b && T = b
+-- Proposition. ∀ b:Bool. b && T = b
 {-@ prp_AndIdRight :: b:Bool -> { b .&&. T = b } @-}
 prp_AndIdRight :: Bool -> Proof
 prp_AndIdRight b = undefined         -- TODO
 
 -- Conjunction is commutative.
--- Lemma:  ∀ b1,b2:Bool. b1 && b2 = b2 && b1
+-- Proposition. ∀ b1,b2:Bool. b1 && b2 = b2 && b1
 {-@ prp_AndCommutativity :: b1:Bool -> b2:Bool -> { b1 .&&. b2 = b2 .&&. b1 } @-}
 prp_AndCommutativity :: Bool -> Bool -> Proof  
 -- Proceed by cases on b1:Bool
@@ -142,7 +142,7 @@ prp_AndCommutativity T b2 =
   *** QED      
 
 -- Disjunction is commutative.
--- Lemma:  ∀ b1,b2:Bool. b1 || b2 = b2 || b1
+-- Proposition. ∀ b1,b2:Bool. b1 || b2 = b2 || b1
 {-@ prp_OrCommutativity :: b1:Bool -> b2:Bool -> { (b1 .||. b2) = (b2 .||. b1) } @-}
 prp_OrCommutativity :: Bool -> Bool -> Proof  
 -- Proceed by cases on b1:Bool, and then on b2:Bool.
