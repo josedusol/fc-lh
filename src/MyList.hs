@@ -307,7 +307,39 @@ prp_mapCompDistr f g (x`C`xs) = undefined
   ==. map f ((g x)`C`map g xs)                   ? map 
   ==. (f (g x))`C`(map f (map g xs))             ? (.) 
   ==. ((f . g) x)`C`(map f (map g xs))           ? (.) 
-  ==. ((f . g) x)`C`(((map f) . (map g)) xs)     ? prp_mapCompDistr f g xs     
+  ==. ((f . g) x)`C`(((map f) . (map g)) xs)     ? prp_mapCompDistr f g xs  -- HI      
   ==. ((f . g) x)`C`(map (f . g) xs)             ? map 
   ==. map (f . g) (x`C`xs)
   *** QED   
+
+-- foldr fusion law
+-- See Algorithm Design with Haskell (2020, Bird&Gibbons) pag. 12
+-- List is assumed finite, for infinite lists another condition is needed.
+-- Proposition. ∀ f:(a -> b -> b). ∀ g:(a -> b -> b). ∀ h:(b -> b). ∀ e:b. ∀ l:List a. 
+--                    h (foldr f e l) = foldr g (h e) l
+--              when ∀ x:a.∀ y:b. h (f x y) = g x (h y)
+{-@ prp_foldrFusion :: f:(a -> b -> b) -> g:(a -> b -> b) 
+                    -> h:(b -> b) -> e:b -> l:List a
+                    -> (x:a -> y:b -> { h (f x y) = g x (h y) })
+                    -> { h (foldr f e l) = foldr g (h e) l }      @-}
+prp_foldrFusion :: (a -> b -> b) -> (a -> b -> b) 
+                -> (b -> b) -> b -> List a
+                -> (a -> b -> Proof)                 -- the "fusion condition"
+                -> Proof
+-- Proceed by induction on l:List a
+-- CB) l = []
+prp_foldrFusion f g h e E hyp_fcnd =
+      h (foldr f e E)                      ? foldr
+  ==. h e                                  ? foldr
+  ==. foldr g (h e) E            
+  *** QED   
+-- l = x:xs 
+-- HI) h (foldr f e xs) = foldr g (h e) xs
+-- TI) h (foldr f e x:xs) =? foldr g (h e) x:xs
+prp_foldrFusion f g h e (x`C`xs) hyp_fcnd =
+      h (foldr f e (x`C`xs))               ? foldr
+  ==. h (f x (foldr f e xs))               ? hyp_fcnd x (foldr f e xs)
+  ==. g x (h (foldr f e xs))               ? prp_foldrFusion f g h e xs hyp_fcnd  -- HI  
+  ==. g x (foldr g (h e) xs)               ? foldr
+  ==. foldr g (h e) (x`C`xs)          
+  *** QED     
