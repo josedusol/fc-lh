@@ -248,17 +248,14 @@ prp_EqNComm (S k) (S h) =
   ==. (S h) .==. (S k)       
   *** QED    
 
-
-{-@ infixr 3 .<=>. @-}
-
 -- Leq Correction.
--- We can't directly use quantifiers in the SMT logic, but we can encode them as 
--- dependent functions for universals and dependent pairs for existentials.
 -- Proposition. ∀ m,n:N. (m <= n = T) <=> (∃ k:N. m + k = n)
--- We prove it in two directions.
+-- We can't directly use quantifiers in the SMT logic, but we can encode them in types
+-- as dependent functions for universals and dependent pairs for existentials.
+-- We prove this in two directions.
 
 -- Leq Correction. The Only If direction.
--- Proposition. ∀ m,n:N. (m <= n = T)  =>  ∃ k:N.(m + k = n)
+-- Proposition. ∀ m,n:N. (m <= n = T) => ∃ k:N.(m + k = n)
 {-@ prp_LeqNCorrOnlyIf :: m:N -> n:N -> ({ (m .<=. n) = T }) -> (k::N, { (m .+. k) = n }) @-}  
 prp_LeqNCorrOnlyIf :: N -> N -> Proof -> (N, Proof)  
 -- Proceed by induction on m:N
@@ -291,7 +288,7 @@ prp_LeqNCorrOnlyIf (S x) (S y) pf =
                                      *** QED)   -- HI, with n = y. So we gain pk = ((x + k) = y)
 
 -- Leq Correction. The If direction.
--- Proposition. ∀ m,n:N. (∃ k:N.m + k = n)  =>  (m <= n = T)
+-- Proposition. ∀ m,n:N. (∃ k:N.m + k = n) => (m <= n = T)
 {-@ prp_LeqNCorrIf :: m:N -> n:N -> (k::N, { (m .+. k) = n }) -> ({ (m .<=. n) = T }) @-}  
 prp_LeqNCorrIf :: N -> N -> (N, Proof) -> Proof
 -- Proceed by induction on m:N
@@ -323,18 +320,20 @@ prp_LeqNCorrIf (S x) (S y) (k,pk) =
                                 ==. (x .+. k) .==. y
                                 *** QED)  -- HI, with n = y. So we gain pf = (x .<=. y = T)
 
--- Another take on Leq Correction.
--- We prove the biconditional directly after doing a (not generally valid) prenex transformation.
+{-@ infixr 3 .<=>. @-}
+
+-- Another take on Leq Correction. Maybe closer to paper and pencil version.
 -- Proposition. ∀ m,n:N.∃ k:N. (m <= n = T) <=> (m + k = n)
-{-@ prp_LeqNCorr :: m:N -> n:N -> (k::N, { ((m .<=. n) .<=>. T) = ((m .+. k) .==. n) }) @-}  
-prp_LeqNCorr :: N -> N -> (N, Proof)  
+-- We prove the biconditional directly after doing a (not generally valid) prenex transformation.
+{-@ prp_LeqNCorr2 :: m:N -> n:N -> (k::N, { ((m .<=. n) .<=>. T) = ((m .+. k) .==. n) }) @-}  
+prp_LeqNCorr2 :: N -> N -> (N, Proof)  
 -- Proceed by induction on m:N
 -- CB) m = O
-prp_LeqNCorr O n = 
-  (n,     (O .<=. n) .<=>. T     ? (.<=.)
-      ==. T .<=>. T              ? (.<=>.)
-      ==. T                      ? prp_EqNrefl n
-      ==. n .==. n               ? prp_AddIdLeft n
+prp_LeqNCorr2 O n = 
+  (n,     (O .<=. n) .<=>. T         ? (.<=.)
+      ==. T .<=>. T                  ? (.<=>.)
+      ==. T                          ? prp_EqNrefl n
+      ==. n .==. n                   ? prp_AddIdLeft n
       ==. (O .+. n) .==. n 
       *** QED)
 -- m = S x  
@@ -342,14 +341,28 @@ prp_LeqNCorr O n =
 -- TI) ∀ n:N.∃ k:N. (S x <= n = T) <=>? (S x + k = n)
 --   Proceed by induction on n:N
 --   CB) n=O
-prp_LeqNCorr (S x) O = undefined
+prp_LeqNCorr2 (S x) O =
+  (O,     (S x .<=. O) .<=>. T       ? (.<=.)
+      ==. F .<=>. T                  ? (.<=>.)
+      ==. F                          ? (.==.)
+      ==. S x .==. O                 ? prp_AddIdRight (S x)
+      ==. (S x .+. O) .==. O  
+      *** QED)
 --   n = S y  
 --   HI2) ∃ k:N. (x <= y = T)     <=>  (x + k = y)
 --   TI2) ∃ k:N. (S x <= S y = T) <=>? (S x + k = S y)
-prp_LeqNCorr (S x) (S y) = undefined -- (fst (prp_LeqNCorr (S x) y), ()   )
-
+prp_LeqNCorr2 (S x) (S y) = 
+  (k,     (S x .<=. S y) .<=>. T     ? (.<=.)
+      ==. (x .<=. y) .<=>. T         ? pk  -- HI
+      ==. (x .+. k) .==. y           -- ? congruence         
+      ==. S (x .+. k) .==. S y       ? (.+.)        
+      ==. (S x .+. k) .==. S y 
+      *** QED)
+  where 
+    (k,pk) = prp_LeqNCorr2 x y
 
 -- Next, the behaviour of the <= relation is postulated.
+-- TODO: we should explicitly connect <= with the mathematical definiton somehow.
 
 -- Proposition. ∀ n:N. O <= n
 {-@ assume prp_LeqZero :: n:N -> { O <= n } @-}
