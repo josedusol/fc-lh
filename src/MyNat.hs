@@ -3,13 +3,14 @@
 {-@ LIQUID "--higherorder"    @-}
 {-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
+{-@ LIQUID "--short-names"    @-}
 
 module MyNat where
 
 import MyBool
 
 import Language.Haskell.Liquid.Equational
-import Prelude (Show, undefined)
+import Prelude (Show, undefined, fst, snd)
 
 ------------------------------------------------------------------------
 -- Data type for natural numbers
@@ -247,11 +248,106 @@ prp_EqNComm (S k) (S h) =
   ==. (S h) .==. (S k)       
   *** QED    
 
--- Proposition. ∀ m,n:N. (m <= n = T) <=> (∃ k:N. m+k = n)
--- TODO: we can't use quantifiers in the SMT logic
--- {-@ prp_LeqNCorr :: m:N -> n:N -> { (m .<=. n = T) <=> (exists k:N. m .+. k = n) } @-}  
--- prp_LeqNCorr :: N -> N -> Proof  
--- prp_LeqNCorr m n = undefined
+
+{-@ infixr 3 .<=>. @-}
+
+-- Leq Correction.
+-- We can't directly use quantifiers in the SMT logic, but we can encode them as 
+-- dependent functions for universals and dependent pairs for existentials.
+-- Proposition. ∀ m,n:N. (m <= n = T) <=> (∃ k:N. m + k = n)
+-- We prove it in two directions.
+
+-- Leq Correction. The Only If direction.
+-- Proposition. ∀ m,n:N. (m <= n = T)  =>  ∃ k:N.(m + k = n)
+{-@ prp_LeqNCorrOnlyIf :: m:N -> n:N -> ({ (m .<=. n) = T }) -> (k::N, { (m .+. k) = n }) @-}  
+prp_LeqNCorrOnlyIf :: N -> N -> Proof -> (N, Proof)  
+-- Proceed by induction on m:N
+-- CB) m = O
+prp_LeqNCorrOnlyIf O n pf = 
+  (n,     O .+. n            ? prp_AddIdLeft
+      ==. n 
+      *** QED )
+-- m = S x  
+-- HI) ∀ n:N. (x <= n = T)   =>  ∃ k:N.(x + k = n)
+-- TI) ∀ n:N. (S x <= n = T) =>? ∃ k:N.(S x + k = n)
+--   Proceed by induction on n:N
+--   CB) n = O
+prp_LeqNCorrOnlyIf (S x) O pf =     -- Impossible
+  (O,     S x .<=. O    
+      ==. F
+      *** QED )
+--   n = S y  
+--   HI2) (S x <= y = T)   =>  ∃ k:N.(S x + k = y)
+--   TI2) (S x <= S y = T) =>? ∃ k:N.(S x + k = S y)
+prp_LeqNCorrOnlyIf (S x) (S y) pf = 
+  (k,     (S x .+. k) .==. S y     ? (.+.)   
+      ==. S (x .+. k) .==. S y     -- ? congruence
+      ==. (x .+. k) .==. y         -- HI
+      *** QED )  
+  where
+    (k,pk) = prp_LeqNCorrOnlyIf x y (    T               -- pf
+                                     ==. S x .<=. S y    ? (.<=.)  
+                                     ==. x .<=. y
+                                     *** QED)   -- HI, with n = y. So we gain pk = ((x + k) = y)
+
+-- Leq Correction. The If direction.
+-- Proposition. ∀ m,n:N. (∃ k:N.m + k = n)  =>  (m <= n = T)
+{-@ prp_LeqNCorrIf :: m:N -> n:N -> (k::N, { (m .+. k) = n }) -> ({ (m .<=. n) = T }) @-}  
+prp_LeqNCorrIf :: N -> N -> (N, Proof) -> Proof
+-- Proceed by induction on m:N
+-- CB) m = O
+prp_LeqNCorrIf O n _ =     
+      O .<=. n        ? (.<=.)
+  ==. T 
+  *** QED
+-- m = S x  
+-- HI) ∀ n:N. (∃ k:N.x + k = n)   =>  (x <= n = T)
+-- TI) ∀ n:N. (∃ k:N.S x + k = n) =>? (S x <= n = T)
+--   Proceed by induction on n:N
+--   CB) n = O  
+prp_LeqNCorrIf (S x) O (k,_) =      -- Impossible 
+      S x .+. k .==. O      
+  ==. F 
+  *** QED
+--   n = S y  
+--   HI2) (∃ k:N.S x + k = y)   =>  (S x <= y = T)  
+--   TI2) (∃ k:N.S x + k = S y) =>? (S x <= S y = T)
+prp_LeqNCorrIf (S x) (S y) (k,pk) = 
+      S x .<=. S y       ? (.<=.)
+  ==. x .<=. y           ? pf -- HI
+  ==. T
+  *** QED
+  where
+    pf = prp_LeqNCorrIf x y (k,     (S x .+. k) .==. S y        ? (.+.) 
+                                ==. S (x .+. k) .==. S y     -- ? congruence
+                                ==. (x .+. k) .==. y
+                                *** QED)  -- HI, with n = y. So we gain pf = (x .<=. y = T)
+
+-- Another take on Leq Correction.
+-- We prove the biconditional directly after doing a (not generally valid) prenex transformation.
+-- Proposition. ∀ m,n:N.∃ k:N. (m <= n = T) <=> (m + k = n)
+{-@ prp_LeqNCorr :: m:N -> n:N -> (k::N, { ((m .<=. n) .<=>. T) = ((m .+. k) .==. n) }) @-}  
+prp_LeqNCorr :: N -> N -> (N, Proof)  
+-- Proceed by induction on m:N
+-- CB) m = O
+prp_LeqNCorr O n = 
+  (n,     (O .<=. n) .<=>. T     ? (.<=.)
+      ==. T .<=>. T              ? (.<=>.)
+      ==. T                      ? prp_EqNrefl n
+      ==. n .==. n               ? prp_AddIdLeft n
+      ==. (O .+. n) .==. n 
+      *** QED)
+-- m = S x  
+-- HI) ∀ n:N.∃ k:N. (x <= n = T)   <=>  (x + k = n)
+-- TI) ∀ n:N.∃ k:N. (S x <= n = T) <=>? (S x + k = n)
+--   Proceed by induction on n:N
+--   CB) n=O
+prp_LeqNCorr (S x) O = undefined
+--   n = S y  
+--   HI2) ∃ k:N. (x <= y = T)     <=>  (x + k = y)
+--   TI2) ∃ k:N. (S x <= S y = T) <=>? (S x + k = S y)
+prp_LeqNCorr (S x) (S y) = undefined -- (fst (prp_LeqNCorr (S x) y), ()   )
+
 
 -- Next, the behaviour of the <= relation is postulated.
 

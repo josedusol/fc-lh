@@ -54,13 +54,13 @@ neg = \b -> case b of {F -> T; T -> F}
 -- T .>>. b2 = b2
 
 {-@ infixr 3 .<=>. @-}
-{-@ inline .<=>.   @-}
+{-@ reflect .<=>.  @-}
 {-@ (.<=>.) :: Bool -> Bool -> Bool @-}
 (.<=>.) :: Bool -> Bool -> Bool
-(.<=>.) = \b1 b2 -> case b1 of {F -> b2; T -> neg b2}
+(.<=>.) = \b1 b2 -> case b1 of {F -> neg b2; T -> b2}
 -- Alt. with pattern matching:
--- F .<=>. b2 = b2
--- T .<=>. b2 = neg b2 
+-- F .<=>. b2 = neg b2 
+-- T .<=>. b2 = b2
 
 
 ------------------------------------------------------------------------
