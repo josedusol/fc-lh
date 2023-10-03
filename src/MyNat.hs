@@ -6,6 +6,7 @@
 module MyNat where
 
 import MyBool
+import Util.EquationalExt
 
 import Language.Haskell.Liquid.Equational
 import Prelude (Show, undefined, fst, snd)
@@ -277,10 +278,10 @@ prp_LeqNCorrOnlyIf (S x) O pf =     -- Impossible
 prp_LeqNCorrOnlyIf (S x) (S y) pf = 
   (k,     (S x .+. k) .==. S y     ? (.+.)   
       ==. S (x .+. k) .==. S y     -- ? congruence
-      ==. (x .+. k) .==. y         -- HI
+      ==. (x .+. k) .==. y         -- ? pk -- HI                      
       *** QED )  
   where
-    (k,pk) = prp_LeqNCorrOnlyIf x y (    T               -- pf
+    (k,pk) = prp_LeqNCorrOnlyIf x y (    T               ? pf
                                      ==. S x .<=. S y    ? (.<=.)  
                                      ==. x .<=. y
                                      *** QED)   -- HI, with n = y. So we gain pk = ((x + k) = y)
@@ -359,21 +360,62 @@ prp_LeqNCorr2 (S x) (S y) =
   where 
     (k,pk) = prp_LeqNCorr2 x y
 
--- Next, the behaviour of the <= relation over N is postulated.
--- TODO: we should explicitly connect <= with the mathematical definiton somehow.
+-- We explicitly connect mathematical <= with the existential definiton.
+--    m <= n  if and only if  ∃ k:N. m + k = n
+-- The definition takes the form of two assumptions for each direction.
+
+{-@ assume def_Leq1 :: m:N -> n:N -> ({ m <= n }) -> (k::N, { (m .+. k) = n }) @-}
+def_Leq1 :: N -> N -> Proof -> (N, Proof)
+def_Leq1 _ _ _ = (undefined,())
+
+{-@ assume def_Leq2 :: m:N -> n:N -> (k::N, { (m .+. k) = n }) -> { m <= n } @-}
+def_Leq2 :: N -> N -> (N, Proof) -> Proof
+def_Leq2 _ _ _ = ()
 
 -- Proposition. ∀ n:N. O <= n
-{-@ assume prp_LeqZero :: n:N -> { O <= n } @-}
+{-@ prp_LeqZero :: n:N -> { O <= n } @-}
 prp_LeqZero :: N -> Proof
-prp_LeqZero n = ()
+prp_LeqZero n = def_Leq2 O n pt
+  where pt = (n,      (O .+. n) .==. n     ? (.+.)
+                  ==. n .==. n             ? prp_EqNrefl n
+                  ==. T                    
+                  *** QED)
+
+-- Proposition. ∀ n:N. n <= n
+{-@ prp_LeqRefl :: n:N -> { n <= n } @-}
+prp_LeqRefl :: N -> Proof
+prp_LeqRefl n = def_Leq2 n n pt
+  where pt = (O,      (n .+. O) .==. n     ? prp_AddIdRight n
+                  ==. n .==. n             ? prp_EqNrefl n
+                  ==. T                    
+                  *** QED)
 
 -- Proposition. ∀ n:N. n <= S n
-{-@ assume prp_LeqSuc :: n:N -> { n <= S n } @-}
+{-@ prp_LeqSuc :: n:N -> { n <= S n } @-}
 prp_LeqSuc :: N -> Proof
-prp_LeqSuc n = ()
+prp_LeqSuc n = def_Leq2 n (S n) pt
+  where pt = (S O,      (n .+. S O) .==. S n          ? prp_AddSucRight n O
+                    ==. S (n .+. O) .==. S n          ? prp_AddIdRight n
+                    ==. S n .==. S n                  ? prp_EqNrefl (S n)
+                    ==. T                  
+                    *** QED)
+
+-- Proposition. ∀ m,n:N. m <= m + n
+{-@ prp_LeqAddRight :: m:N -> n:N -> { m <= m .+. n } @-}
+prp_LeqAddRight :: N -> N -> Proof
+prp_LeqAddRight m n = def_Leq2 m (m .+. n) pt
+  where pt = (n,        (m .+. n) .==. (m .+. n)      ? prp_EqNrefl (m .+. n)
+                    ==. T                  
+                    *** QED)
 
 -- Proposition. ∀ m,n:N. m <= n  ==>  S m <= S n 
-{-@ assume prp_LeqSucMono :: m:N -> n:N -> ({ m <= n }) -> { (S m) <= (S n) } @-}
+{-@ prp_LeqSucMono :: m:N -> n:N -> ({ m <= n }) -> { (S m) <= (S n) } @-}
 prp_LeqSucMono :: N -> N -> Proof -> Proof
-prp_LeqSucMono m n pf = ()
+prp_LeqSucMono m n pm = def_Leq2 (S m) (S n) pt
+  where (k,ph) = def_Leq1 m n pm           -- H. So we gain (m + k = n) for some k
 
+        pt     = (k,     S m               ? prp_LeqAddRight (S m) k
+                     <=. S m .+. k         ? (.+.)
+                     ==. S (m .+. k)       ? ph -- H: m + k = n
+                     ==. S n  
+                     *** QED)              
