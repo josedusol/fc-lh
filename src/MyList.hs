@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-@ LIQUID "--higherorder"    @-}
 {-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
 

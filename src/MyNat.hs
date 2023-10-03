@@ -1,6 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-@ LIQUID "--extensionality" @-}
-{-@ LIQUID "--higherorder"    @-}
 {-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
 {-@ LIQUID "--short-names"    @-}
@@ -250,7 +248,7 @@ prp_EqNComm (S k) (S h) =
 
 -- Leq Correction.
 -- Proposition. ∀ m,n:N. (m <= n = T) <=> (∃ k:N. m + k = n)
--- We can't directly use quantifiers in the SMT logic, but we can encode them in types
+-- We can't directly use quantifiers inside the SMT logic, but we can encode them in types
 -- as dependent functions for universals and dependent pairs for existentials.
 -- We prove this in two directions.
 
@@ -288,7 +286,7 @@ prp_LeqNCorrOnlyIf (S x) (S y) pf =
                                      *** QED)   -- HI, with n = y. So we gain pk = ((x + k) = y)
 
 -- Leq Correction. The If direction.
--- Proposition. ∀ m,n:N. (∃ k:N.m + k = n) => (m <= n = T)
+-- Proposition. ∀ m,n:N. (∃ k:N.m + k = n) ==> (m <= n = T)
 {-@ prp_LeqNCorrIf :: m:N -> n:N -> (k::N, { (m .+. k) = n }) -> ({ (m .<=. n) = T }) @-}  
 prp_LeqNCorrIf :: N -> N -> (N, Proof) -> Proof
 -- Proceed by induction on m:N
@@ -298,8 +296,8 @@ prp_LeqNCorrIf O n _ =
   ==. T 
   *** QED
 -- m = S x  
--- HI) ∀ n:N. (∃ k:N.x + k = n)   =>  (x <= n = T)
--- TI) ∀ n:N. (∃ k:N.S x + k = n) =>? (S x <= n = T)
+-- HI) ∀ n:N. (∃ k:N.x + k = n)   ==>  (x <= n = T)
+-- TI) ∀ n:N. (∃ k:N.S x + k = n) ==>? (S x <= n = T)
 --   Proceed by induction on n:N
 --   CB) n = O  
 prp_LeqNCorrIf (S x) O (k,_) =      -- Impossible 
@@ -323,8 +321,8 @@ prp_LeqNCorrIf (S x) (S y) (k,pk) =
 {-@ infixr 3 .<=>. @-}
 
 -- Another take on Leq Correction. Maybe closer to paper and pencil version.
+-- We prove the biconditional directly after doing a (not generally valid, but weakening) prenex transformation.
 -- Proposition. ∀ m,n:N.∃ k:N. (m <= n = T) <=> (m + k = n)
--- We prove the biconditional directly after doing a (not generally valid) prenex transformation.
 {-@ prp_LeqNCorr2 :: m:N -> n:N -> (k::N, { ((m .<=. n) .<=>. T) = ((m .+. k) .==. n) }) @-}  
 prp_LeqNCorr2 :: N -> N -> (N, Proof)  
 -- Proceed by induction on m:N
@@ -361,7 +359,7 @@ prp_LeqNCorr2 (S x) (S y) =
   where 
     (k,pk) = prp_LeqNCorr2 x y
 
--- Next, the behaviour of the <= relation is postulated.
+-- Next, the behaviour of the <= relation over N is postulated.
 -- TODO: we should explicitly connect <= with the mathematical definiton somehow.
 
 -- Proposition. ∀ n:N. O <= n
