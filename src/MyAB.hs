@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
-{-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
+{-@ LIQUID "--short-names"    @-}
 
 module MyAB where
 

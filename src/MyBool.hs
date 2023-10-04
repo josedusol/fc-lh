@@ -1,5 +1,7 @@
 {-# LANGUAGE GADTs #-}
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--short-names"    @-}
 
 module MyBool where
 

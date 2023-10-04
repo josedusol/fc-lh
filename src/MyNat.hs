@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
 {-@ LIQUID "--short-names"    @-}
 
@@ -418,4 +417,12 @@ prp_LeqSucMono m n pm = def_Leq2 (S m) (S n) pt
                      <=. S m .+. k         ? (.+.)
                      ==. S (m .+. k)       ? ph -- H: m + k = n
                      ==. S n  
-                     *** QED)              
+                     *** QED)           
+
+-- Experimental.
+-- Can we define our own mathematical <= ?. Maybe something like the following:
+{-@ infixr 7 .<= @-}
+{-@ assume (.<=) :: m:N -> n:N -> (k::N, { (m .+. k) = n }) @-}
+(.<=) :: N -> N -> (N, Proof)
+_ .<= _ = undefined       
+-- But no, this doesn't seem useful.
