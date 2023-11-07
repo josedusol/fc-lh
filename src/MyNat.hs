@@ -267,10 +267,7 @@ prp_LeqNCorrOnlyIf O n pf =
 -- TI) ∀ n:N. (S x <= n = T) =>? ∃ k:N.(S x + k = n)
 --   Proceed by induction on n:N
 --   CB) n = O
-prp_LeqNCorrOnlyIf (S x) O pf =     -- Impossible
-  (O,     S x .<=. O    
-      ==. F
-      *** QED )
+prp_LeqNCorrOnlyIf (S x) O pf = (O, impossible (S x .<=. O))
 --   n = S y  
 --   HI2) (S x <= y = T)   =>  ∃ k:N.(S x + k = y)
 --   TI2) (S x <= S y = T) =>? ∃ k:N.(S x + k = S y)
@@ -300,10 +297,7 @@ prp_LeqNCorrIf O n _ =
 -- TI) ∀ n:N. (∃ k:N.S x + k = n) ==>? (S x <= n = T)
 --   Proceed by induction on n:N
 --   CB) n = O  
-prp_LeqNCorrIf (S x) O (k,_) =      -- Impossible 
-      S x .+. k .==. O      
-  ==. F 
-  *** QED
+prp_LeqNCorrIf (S x) O (k,_) = impossible (S x .+. k .==. O)
 --   n = S y  
 --   HI2) (∃ k:N.S x + k = y)   =>  (S x <= y = T)  
 --   TI2) (∃ k:N.S x + k = S y) =>? (S x <= S y = T)
@@ -421,8 +415,8 @@ prp_LeqSucMono m n pm = def_Leq2 (S m) (S n) pt
 
 -- Experimental.
 -- Can we define our own mathematical <= ?. Maybe something like the following:
-{-@ infixr 7 .<= @-}
-{-@ assume (.<=) :: m:N -> n:N -> (k::N, { (m .+. k) = n }) @-}
-(.<=) :: N -> N -> (N, Proof)
-_ .<= _ = undefined       
+-- {-@ infixr 7 .<= @-}
+-- {-@ assume (.<=) :: m:N -> n:N -> (k::N, { (m .+. k) = n }) @-}
+-- (.<=) :: N -> N -> (N, Proof)
+-- _ .<= _ = undefined       
 -- But no, this doesn't seem useful.

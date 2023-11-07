@@ -10,3 +10,17 @@ import Language.Haskell.Liquid.Equational
 x <=. y = y 
 {-# INLINE (<=.) #-} 
 infixl 3 <=.
+
+-- From falsehood, anything follows
+{-@ impossible :: {v:a | false} -> b @-}
+impossible :: a -> b
+impossible _ = undefined
+
+-- Proofs conjunction
+-- Useful to justify multiple transformations in one step
+(&&&) :: Proof -> Proof -> Proof
+x &&& _ = x
+
+-- Proof by SMT
+trivial :: Proof
+trivial = ()
